@@ -1,8 +1,15 @@
 import numpy as np
 import cv2
 import glob
+import sys
+sys.path.append('src/utils')
 from tracker import Tracker
+from sklearn.svm import SVC
+from classifier import Classifier
 
+# load the classifier
+clf = Classifier()
+clf.loadModel('src/classification/Classifier.pkl')
 
 path_str = 'rectified/Stereo_conveyor_without_occlusions/'
 imgs_path = sorted(glob.glob(path_str+'right/*.png'))
@@ -23,9 +30,11 @@ for fname in imgs_path:
         (x, y, w, h) = cv2.boundingRect(Object)
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
         roi = img[y:y+h, x:x+w]
-        text = "detected"
+        y_predict = clf.predict(roi)
+        text = y_predict
+        cv2.putText(img, "class: {}".format(text), (x+20, y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)   
         
-    cv2.putText(img, "Status: {}".format(text), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)    
+      
     cv2.imshow('thresh', thresh)
     cv2.imshow('foreground mask',  fg_mask )   
     cv2.imshow('conveyor_with_occlusions',img)

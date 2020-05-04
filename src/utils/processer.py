@@ -6,105 +6,137 @@ import glob
 import os
 
 
+def nameAndResize(input_path,output_path, size, lable):
 
-# def __init__(self, file):
-#     head, tail = os.path.split(file)
-#     self.path =  head
-#     self.name = tail
-#     print(self.name)
-#     self.image = cv2.imread(file)
+    imgs_path = sorted(glob.glob(input_path))
+    num = 0
+    for file in imgs_path:
+        image = cv2.imread(file)
+        img_resized = cv2.resize(image, size)
+        cv2.imwrite(output_path + lable + '_' + f"{num:04d}.jpg", img_resized)
+        num+=1
 
-# def resize(self, image, size):
-#     image = cv2.resize(image,size)
+def random_rotation(image):
+    rows, cols,c = image.shape
+    degree = random.uniform(-25, 25)
+    M = cv2.getRotationMatrix2D((cols/2,rows/2),  degree, 1)
+    return cv2.warpAffine(image, M, (cols, rows))
 
-#     return image
+def addeptive_gaussian_noise(image):
+    h,s,v=cv2.split(image)
+    s = cv2.adaptiveThreshold(s, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    h = cv2.adaptiveThreshold(h, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    v = cv2.adaptiveThreshold(v, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    return cv2.merge([h,s,v])
 
-# def random_rotate(save_path, image):
-#     img = self.image.copy()
-
-#     angle = random.uniform(-25, 25)
-#     h,w = image.shape
-#     #rotate matrix
-#     M = cv2.getRotationMatrix2D((w/2,h/2), angle, scale=1.0)
-#     #rotate
-#     image = cv2.warpAffine(image,M,(w,h)
-#     cv2.imwrite(save_path+'%s' %str(name_int)+'_flip.jpg', image)
-
-# def flip(save_path, image, vflip=False, hflip=False):
-#     img = self.image.copy()
-#     if hflip or vflip:
-#         if hflip and vflip:
-#             c = -1
-#         else:
-#             c = 0 if vflip else 1
-#         image = cv2.flip(image, flipCode=c)
+def add_light(image, gamma=1.0):
+    # gamma>=1:light, gamma<1:dark
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+                      for i in np.arange(0, 256)]).astype("uint8")
+    return cv2.LUT(image, table)
 
 
+def add_light_color(image, color, gamma=1.0):
+    # gamma>=1:light color, gamma<1:dark color
+    invGamma = 1.0 / gamma
+    image = (color - image)
+    table = np.array([((i / 255.0) ** invGamma) * 255
+                      for i in np.arange(0, 256)]).astype("uint8")
+    return cv2.LUT(image, table)
 
-# def image_augment(self, save_path): 
 
-#     img = self.image.copy()
-#     img_resize = self.resize(img,(256,256))
-#     img_flip = self.flip(img, vflip=True, hflip=False)
-#     img_rot = self.rotate(img)
-#     #img_gaussian = self.add_GaussianNoise(img)
-    
-#     name_int = self.name[:len(self.name)-4]
-#     cv2.imwrite(save_path+'%s' %str(name_int)+'_resize.jpg', img_resize)
-#     cv2.imwrite(save_path+'%s' %str(name_int)+'_vflip.jpg', img_flip)
-#     cv2.imwrite(save_path+'%s' %str(name_int)+'_rot.jpg', img_rot)
-#     #cv2.imwrite(save_path+'%s' %str(name_int)+'_GaussianNoise.jpg', img_gaussian)
-    
+def saturation_image(image,saturation):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    v = image[:, :, 2]
+    v = np.where(v <= 255 - saturation, v + saturation, 255)
+    image[:, :, 2] = v
+    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+
+
+def hue_image(image,saturation):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    v = image[:, :, 2]
+    v = np.where(v <= 255 + saturation, v - saturation, 255)
+    image[:, :, 2] = v
+    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+
+
+def horizontal_flip(image):
+    # horizontal flip doesn't need skimage, it's easy as flipping the image array of pixels !
+    return image[:, ::-1]
+
+def image_augment(input_path, output_path): 
+
+    imgs_path = sorted(glob.glob(input_path))
+
+    path = random.sample(imgs_path,5)
+    for file in path:
+        image = cv2.imread(file)
+        img_rot = random_rotation(image)
+        path, name = os.path.split(file)
+        cv2.imwrite(output_path+'%s' %str(name[:-4]) + '_rot.jpg', img_rot)
+
+    path = random.sample(imgs_path,5)  
+    for file in path:
+        image = cv2.imread(file)
+        img_flip = horizontal_flip(image)
+        path, name = os.path.split(file)
+        cv2.imwrite(output_path+'%s' %str(name[:-4]) + '_flip.jpg', img_flip)
+
+    path = random.sample(imgs_path,5)
+    for file in path:
+        image = cv2.imread(file)
+        img_noise = addeptive_gaussian_noise(image)                    
+        path, name = os.path.split(file)
+        cv2.imwrite(output_path+'%s' %str(name[:-4]) + '_noise.jpg', img_noise)
+
+    path = random.sample(imgs_path,5)
+    for file in path:
+        image = cv2.imread(file)
+        img_light = add_light(image,gamma = 1.5)                    
+        path, name = os.path.split(file)
+        cv2.imwrite(output_path+'%s' %str(name[:-4]) + '_light.jpg', img_light)
+
+    path = random.sample(imgs_path,5)
+    for file in path:
+        image = cv2.imread(file)
+        img_colorlight = add_light_color(image,50, gamma=1.5)                    
+        path, name = os.path.split(file)
+        cv2.imwrite(output_path+'%s' %str(name[:-4]) + '_colorlight.jpg', img_colorlight)
+
+def getLable(input_path,output_path):
+    lable = []
+    imgs_path = sorted(glob.glob(input_path))
+    for file in imgs_path:
+        path, name = os.path.split(file)
+        lab = name[:-9]
+        lable.append(lab)
+    print(lable)
+    np.savetxt(output_path + 'lable.txt', lable, fmt="%s")
+
     
 if __name__ == "__main__":
     
     # ---------------------- name and resize -------------------------------------#
-    # path_str1 = 'training_dataset/books/*'
-    # path_str2 = 'training_dataset/cups/*'
-    # path_str3 = 'training_dataset/boxes/*'
-    # output_path = 'training_dataset/test/'
-    # imgs_path = sorted(glob.glob(path_str3))
-    # print(imgs_path)
+    path_str1 = 'training_dataset/raw/book/*'
+    path_str2 = 'training_dataset/raw/cup/*'
+    path_str3 = 'training_dataset/raw/box/*'
+    output_path = 'training_dataset/processed/imgs/'
+    size = (256,256)
+    nameAndResize(path_str1,output_path, size, 'book')
+    nameAndResize(path_str2,output_path, size, 'cup')
+    nameAndResize(path_str3,output_path, size, 'box')
 
-    # num = 0
-    # name1 = 'book'
-    # name2 = 'cup'
-    # name3 = 'box'
-    # for file in imgs_path:
-    #     image = cv2.imread(file)
-    #     img_resized = cv2.resize(image,(256,256))
-    #     cv2.imwrite(output_path + name3 + '_' + f"{num:04d}.jpg", img_resized)
-    #     num+=1
 
     #----------------------------- augment ----------------------------------------#
+    input_path = 'training_dataset/processed/imgs/*'
+    output_path = 'training_dataset/processed/augmented/'
+    image_augment(input_path, output_path)
+   
     
-    # path_str = 'training_dataset/test/*'
-    # imgs_path = sorted(glob.glob(path_str))
-
-    # # = random.choice(imgs_path)
-
     # # --------------------------- get lable --------------------------------------#
+    input_path = 'training_dataset/processed/imgs/*'
+    output_path =  'training_dataset/processed/'
+    getLable(input_path,output_path)
 
-    # lable = []
-    # for file in imgs_path:
-    #     path, name = os.path.split(file)
-    #     lab = name[:-9]
-    #     lable.append(lab)
-
-    # print(lable)
-    # with open('training_dataset/lable.txt','w') as f:
-    #     f.write(str(lable))
-
-    #----------------------------- get mxl lable -----------------------------------------#
-    lable_mxl = []
-    for i in range(100):
-        lable_mxl.append('cup') 
-    for i in range(100):
-        lable_mxl.append('box') 
-    for i in range(100):
-        lable_mxl.append('book')             
-    print(lable_mxl)
-    
-    with open('training_dataset/lable_mxl.txt','w') as f:
-        f.write(str(lable_mxl))
-    #np.savetxt( 'training_dataset/lable_mxl.csv', lable_mxl)

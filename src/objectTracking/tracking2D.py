@@ -8,8 +8,9 @@ from sklearn.svm import SVC
 from classifier import Classifier
 
 # load the classifier
-clf = Classifier()
+clf = Classifier('training_dataset/processed/imgs/*','training_dataset/processed/lable.txt')
 clf.loadModel('src/classification/Classifier.pkl')
+#clf.train()
 
 path_str = 'rectified/Stereo_conveyor_without_occlusions/'
 imgs_path = sorted(glob.glob(path_str+'right/*.png'))

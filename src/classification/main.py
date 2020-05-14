@@ -31,9 +31,11 @@ def loadTrainingData(imgs_path,label_path):
     # read images
     imgs_path = sorted(glob.glob(imgs_path))
     images = []
-    for file in imgs_path:
+    for i, file in  enumerate(imgs_path):
         img = cv2.imread(file)
+        img = cv2.resize(img, (256,256))
         (h,w,d) = img.shape
+        print( i, img.shape)
         # To apply a classifier on this data, we need to flatten the image, to turn the data in a (samples, feature) matrix:
         images.append(img.reshape(h*w*d))
     # read labels
@@ -47,14 +49,16 @@ def loadTrainingData(imgs_path,label_path):
 if __name__ == "__main__":
     
     
-    imgs_path = 'training_dataset/processed/imgs/*'
-    label_path = 'training_dataset/processed/lable.txt'
+    # imgs_path = 'training_dataset/dataset1/processed/*'
+    # label_path = 'training_dataset/dataset1/lable.txt'
+    imgs_path = 'training_dataset/dataset2/video/*'
+    label_path = 'training_dataset/dataset2/lable.txt'
 
     X, y ,imgshape = loadTrainingData(imgs_path,label_path)
     classNames = np.unique(y)
 
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     # doing nomalization (not standardelization)
     scaler = preprocessing.MinMaxScaler()
@@ -64,7 +68,7 @@ if __name__ == "__main__":
 
     # doing pca
     n_components = 20
-    pca = PCA(n_components=n_components, svd_solver='randomized', whiten=True)
+    pca = PCA(n_components=n_components, svd_solver='randomized')
     X_train_pca = pca.fit_transform(X_train_scal)
     X_test_pca = pca.transform(X_test_scal)
     
@@ -108,7 +112,6 @@ if __name__ == "__main__":
 
     #save the model
     joblib.dump(clf, 'src/classification/Classifier.pkl') 
-    #np.savetxt('src/classification/pcs.txt', PCs[:,range(K)])
 
     plt.show()
 

@@ -15,8 +15,12 @@ class Classifier(object):
     def __init__(self, imgs_path,label_path):      
         self.n_components = 20        
         self.loadTrainingData(imgs_path,label_path)
-        self.pca = PCA(n_components=self.n_components, svd_solver='randomized', whiten=True).fit(self.X)
-        self.scaler = preprocessing.MinMaxScaler().fit(self.X)
+        self.scaler = preprocessing.MinMaxScaler()
+        self.X_scal = self.scaler.fit_transform(self.X)
+        self.pca = PCA(n_components=self.n_components, svd_solver='randomized').fit(self.X_scal) # to fit the X_scal, not X !!!!!
+        #self.pca = np.loadtxt('src/classification/pcs.txt')
+        self.i = 0
+        self.img_shape = (256,256,3)
 
     def train(self):
         param_grid = {'C': [0.1, 1, 10, 100, 1000, 10000],
@@ -40,10 +44,14 @@ class Classifier(object):
         self.X = np.array(images)
         self.y = lable
 
-    def predict(self,image):
+    def predictNewImage(self,image):
         img_resized = cv2.resize(image,(256,256))
-        x = img_resized.reshape(-1,256*256*3)
+        x = img_resized.reshape(256*256*3)
+        x = x.reshape(1,-1) # convert to 2D array
+        #cv2.imwrite('training_dataset/video2/' + f"{self.i:04d}.png", img_resized)
+        self.i+=1
         xs = self.scaler.transform(x)
         x_pca = self.pca.transform(xs)
+        #x_pca = xs @ self.pca
         y_predict = self.clf.predict(x_pca)
         return y_predict

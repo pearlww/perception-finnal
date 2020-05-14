@@ -3,29 +3,30 @@ import numpy as np
 class Kalman(object):
 
     def __init__(self):
+        self.imagesize = (1280, 720)
         self.reset()
 
     def reset(self):
 
-        self.X = np.array([[1100],
+        self.X = np.array([ [0],
                             [0],
                             [0],
-                            [300],
+                            [0],
                             [0],
                             [0]])
         #because we don't know the inital place, so the initial uncertainty is very large
-        self.P = np.array([ [100, 0, 0, 0, 0, 0],
-                            [0, 1000, 0, 0, 0, 0],
-                            [0, 0, 1000, 0, 0, 0],
-                            [0, 0, 0, 100, 0, 0],
-                            [0, 0, 0, 0, 1000, 0],
-                            [0, 0, 0, 0, 0, 1000]])
+        self.P = np.array([ [500, 0, 0, 0, 0, 0],
+                            [0, 500, 0, 0, 0, 0],
+                            [0, 0, 500, 0, 0, 0],
+                            [0, 0, 0, 500, 0, 0],
+                            [0, 0, 0, 0, 500, 0],
+                            [0, 0, 0, 0, 0, 500]])
 
         self.u = np.zeros((6,1))
-        self.F = np.array([[1, 1, 0, 0, 0, 0], # x, x., x..
+        self.F = np.array([[1, 1, 0.5, 0, 0, 0], # x, x., x..
                             [0, 1, 1, 0, 0, 0],
                             [0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 1, 1, 0], # y ,y., y..
+                            [0, 0, 0, 1, 1, 0.5], # y ,y., y..
                             [0, 0, 0, 0, 1, 1],
                             [0, 0, 0, 0, 0, 1]])
 
